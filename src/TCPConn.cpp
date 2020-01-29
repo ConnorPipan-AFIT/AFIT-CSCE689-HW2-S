@@ -312,7 +312,7 @@ void TCPConn::getMenuChoice() {
    // Don't be lazy and use my outputs--make your own!
    std::string msg;
    if (cmd.compare("hello") == 0) {
-      _connfd.writeFD("Hello back!\n");
+      _connfd.writeFD("hello?!\n");
    } else if (cmd.compare("menu") == 0) {
       sendMenu();
    } else if (cmd.compare("exit") == 0) {
@@ -322,22 +322,20 @@ void TCPConn::getMenuChoice() {
       _connfd.writeFD("New Password: ");
       _status = s_changepwd;
    } else if (cmd.compare("1") == 0) {
-      msg += "You want a prediction about the weather? You're asking the wrong Phil.\n";
-      msg += "I'm going to give you a prediction about this winter. It's going to be\n";
-      msg += "cold, it's going to be dark and it's going to last you for the rest of\n";
-      msg += "your lives!\n";
+      msg += "Lorem ipsum dolor sit amet, consectetur adipiscing elit.\n";
+      msg += "Curabitur lacinia, ante a aliquet varius, felis purus varius felis,\n";
+      msg += "accumsan aliquet leo purus at libero. Vestibulum vehicula dignissim euismod.\n";
       _connfd.writeFD(msg);
    } else if (cmd.compare("2") == 0) {
-      _connfd.writeFD("42\n");
+      _connfd.writeFD("Answer hazy. Try again later.\n");
    } else if (cmd.compare("3") == 0) {
-      _connfd.writeFD("That seems like a terrible idea.\n");
+      _connfd.writeFD("Currently unimplemented. It seems the best move is not to play.\n");
    } else if (cmd.compare("4") == 0) {
-
+      _connfd.writeFD("What am I, your puppet?");
    } else if (cmd.compare("5") == 0) {
-      _connfd.writeFD("I'm singing, I'm in a computer and I'm siiiingiiiing! I'm in a\n");
-      _connfd.writeFD("computer and I'm siiiiiiinnnggiiinnggg!\n");
+      _connfd.writeFD("Daisy, daisy...\n");
    } else {
-      msg = "Unrecognized command: ";
+      msg = "I didn't recognize that command: ";
       msg += cmd;
       msg += "\n";
       _connfd.writeFD(msg);
@@ -355,10 +353,10 @@ void TCPConn::sendMenu() {
 
    // Make this your own!
    menustr += "Available choices: \n";
-   menustr += "  1). Provide weather report.\n";
-   menustr += "  2). Learn the secret of the universe.\n";
+   menustr += "  1). Print sample text\n";
+   menustr += "  2). Read fortune\n";
    menustr += "  3). Play global thermonuclear war\n";
-   menustr += "  4). Do nothing.\n";
+   menustr += "  4). Do something.\n";
    menustr += "  5). Sing. Sing a song. Make it simple, to last the whole day long.\n\n";
    menustr += "Other commands: \n";
    menustr += "  Hello - self-explanatory\n";
