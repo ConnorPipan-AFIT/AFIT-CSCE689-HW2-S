@@ -6,6 +6,7 @@
 #include "Server.h"
 #include "FileDesc.h"
 #include "TCPConn.h"
+#include "LogMgr.h"
 
 class TCPServer : public Server 
 {
@@ -23,6 +24,9 @@ private:
  
    // List of TCPConn objects to manage connections
    std::list<std::unique_ptr<TCPConn>> _connlist;
+
+   //Class to manage server logging
+   LogMgr *ServerLog;
 
 };
 

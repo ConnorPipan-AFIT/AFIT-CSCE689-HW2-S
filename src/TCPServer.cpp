@@ -12,7 +12,9 @@
 #include <sstream>
 #include "TCPServer.h"
 
-TCPServer::TCPServer(){ // :_server_log("server.log", 0) {
+TCPServer::TCPServer(){ 
+   ServerLog = new LogMgr("server.log");
+   ServerLog->Log("Server Initialized");
 }
 
 
@@ -66,12 +68,13 @@ void TCPServer::listenSvr() {
       socklen_t len = sizeof(cliaddr);
 
       if (_sockfd.hasData()) {
-         TCPConn *new_conn = new TCPConn();
+         TCPConn *new_conn = new TCPConn(ServerLog);
          if (!new_conn->accept(_sockfd)) {
             // _server_log.strerrLog("Data received on socket but failed to accept.");
             continue;
          }
          std::cout << "***Got a connection***\n";
+         ServerLog->Log("***Got a connection***");
 
          _connlist.push_back(std::unique_ptr<TCPConn>(new_conn));
 

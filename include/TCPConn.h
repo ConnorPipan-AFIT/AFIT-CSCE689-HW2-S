@@ -2,18 +2,21 @@
 #define TCPCONN_H
 
 #include "FileDesc.h"
+#include "PasswdMgr.h"
+#include "LogMgr.h"
 
 const int max_attempts = 2;
 
 // Methods and attributes to manage a network connection, including tracking the username
 // and a buffer for user input. Status tracks what "phase" of login the user is currently in
 
-#include "PasswdMgr.h"
+
+#include "LogMgr.h"
 
 class TCPConn 
 {
 public:
-   TCPConn(/* LogMgr &server_log*/);
+   TCPConn(LogMgr *server_log);
    ~TCPConn();
 
    bool accept(SocketFD &server);
@@ -55,8 +58,12 @@ private:
    std::string _newpwd; // Used to store user input for changing passwords
 
    int _pwd_attempts = 0;
+   const int _max_pwd_attempts = 2;
 
    PasswdMgr *PasswordManager;
+   LogMgr *ServerLog;
+
+   bool checkIPWhitelist(const std::string userIP);
 };
 
 

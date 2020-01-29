@@ -4,16 +4,20 @@
 #include <cstring>
 #include <algorithm>
 #include <iostream>
+#include <sstream>
 #include "TCPConn.h"
 #include "strfuncts.h"
 
 // The filename/path of the password file
 const char pwdfilename[] = "passwd";
+const char whitelistfilename[] = "whitelist";
 
-TCPConn::TCPConn()
-{ // LogMgr &server_log):_server_log(server_log) {
+TCPConn::TCPConn(LogMgr *server_log)
+{
 
+   ServerLog = server_log;
    PasswordManager = new PasswdMgr(pwdfilename);
+   
 
 }
 
@@ -62,10 +66,31 @@ int TCPConn::sendText(const char *msg, int size) {
 
 void TCPConn::startAuthentication() {
 
-   // Skipping this for now
-   _status = s_username;
+   //Get IP
+   std::string UserIP;
+   this->getIPAddrStr(UserIP);
+   //std::cout << "Incoming connection from " << UserIP << "\n";
+   
 
-   _connfd.writeFD("Username: "); 
+   //Compare IP to whitelist
+   if(checkIPWhitelist(UserIP))
+   {
+      //Ask for username/password
+      ServerLog->Log("Connection from " + UserIP + " accepted (on whitelist)");
+      _status = s_username;
+      
+   }
+   else
+   {
+      //IP not in whitelist, cancel connection.
+      //std::cout << "Refusing connection from " << UserIP << "\n";
+      ServerLog->Log("Connection from " + UserIP + " refused (not on whitelist)");
+      _connfd.writeFD("This connection is not allowed.\n");
+      this->disconnect();
+
+   }
+
+   
 }
 
 /**********************************************************************************************
@@ -106,7 +131,8 @@ void TCPConn::handleConnection() {
             break;
       }
    } catch (socket_error &e) {
-      std::cout << "Socket error, disconnecting.";
+      //std::cout << "Socket error, disconnecting.";
+      ServerLog->Log("Socket error, disconnecting client " + _username);
       disconnect();
       return;
    }
@@ -123,22 +149,21 @@ void TCPConn::handleConnection() {
 
 void TCPConn::getUsername() {
    // Insert your mind-blowing code here
-
+   _connfd.writeFD("Username: "); 
   getUserInput(_username);
-
-  //See if user exists
-  //TODO
 
   if(PasswordManager->checkUser(_username.c_str())) //find user = true
   {
-     std::cout << "Found user " << _username << "\n";
+     //std::cout << "Found user " << _username << "\n";
      _status = s_passwd;
      //_connfd.writeFD("Welcome, user!");
   }
   else
   {
-     std::cout << "Unknown user\n";
-     _connfd.writeFD("username not recognized.\n");
+     //std::cout << "Unknown user\n";
+     ServerLog->Log("Username " + _username + " not recognized.");
+     _connfd.writeFD("Username not recognized.\n");
+     this->disconnect();
   }
   
    
@@ -155,9 +180,6 @@ void TCPConn::getUsername() {
 void TCPConn::getPasswd() {
    // Insert your astounding code here
 
-   
-
-
    _connfd.writeFD("Password: "); 
 
    std::string password;
@@ -166,15 +188,32 @@ void TCPConn::getPasswd() {
    //Check password
    bool passwordIsValid = PasswordManager->checkPasswd(_username.c_str(), password.c_str());
 
+   _pwd_attempts = _pwd_attempts + 1;
    if(passwordIsValid)
    {
       _connfd.writeFD("Password verified. Welcome back!\n");
-      _status = s_confirmpwd;
+      sendMenu();
+      ServerLog->Log("User " + _username + " has successfully logged in.");
+      _status = s_menu;
    }
    else
    {
-      _connfd.writeFD("Username/Password combination not recognized. Please try again.\n");
-      _status = s_username;
+      //std::cout << "User " << _username << " attempted to log in with bad password. Attempt " << _pwd_attempts << "/" << _max_pwd_attempts << "\n";
+      if(_pwd_attempts < _max_pwd_attempts)
+      {
+         _connfd.writeFD("Username/Password combination not recognized. Please try again.\n");
+         _status = s_username;
+      }
+      else
+      {
+         //std::cout << "User " << _username << " has run out of password attempts.\n";
+         std::string UserIP;
+         getIPAddrStr(UserIP);
+         ServerLog->Log("Failed login - too many password attempts (" + _username + ", " + UserIP + ")");
+         _connfd.writeFD("You have run out of password attempts. Goodbye.\n");
+         this->disconnect();
+      }
+      
    }
 
    
@@ -194,8 +233,26 @@ void TCPConn::getPasswd() {
 void TCPConn::changePassword() {
    // Insert your amazing code here
 
-   std::string password;
-   getUserInput(password);
+   //Get new password
+   std::string password1;
+   getUserInput(password1);
+
+   _connfd.writeFD("\n Enter new password again: ");
+   std::string password2;
+   getUserInput(password2);
+
+   if(password1.compare(password2) == 0)
+   {
+      _connfd.writeFD("\nUpdating password....\n");
+      PasswordManager->changePasswd(_username.c_str(), password1.c_str());
+      _connfd.writeFD("Password updated.\n");
+      
+   }
+   else
+   {
+      _connfd.writeFD("\nPasswords do not match. Returning to menu.\n");
+   }
+   _status = s_menu;
 
    //
 
@@ -319,6 +376,9 @@ void TCPConn::sendMenu() {
  *    Throws: runtime_error for unrecoverable issues
  **********************************************************************************************/
 void TCPConn::disconnect() {
+   std::string UserIP;
+   getIPAddrStr(UserIP);
+   ServerLog->Log("Disconnecting user (" + _username + "," + UserIP + ')');
    _connfd.closeFD();
 }
 
@@ -340,3 +400,31 @@ void TCPConn::getIPAddrStr(std::string &buf) {
    return _connfd.getIPAddrStr(buf);
 }
 
+bool TCPConn::checkIPWhitelist(const std::string userIP)
+{
+   //Open up the whitelist
+   FileFD whitelistFD(whitelistfilename);
+
+   //If whitelist exists,
+   if(whitelistFD.openFile(FileFD::readfd))
+   {
+      //Read line-by-line, see if any match our user's IP
+      std::string line;
+      while(whitelistFD.readStr(line) > 0)
+      {
+         if(line.compare(userIP) == 0)
+         {
+            return true;
+         }
+      }
+      //Otherwise, there are no matches. Return false.
+      return false;
+   }
+   else
+   {
+      //We don't have a whitelist, return true.
+      std::cout << "Cannot open IP whitelist.\n";
+      return true;
+   }
+   
+}
