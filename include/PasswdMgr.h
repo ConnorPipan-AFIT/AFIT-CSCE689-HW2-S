@@ -29,6 +29,8 @@ class PasswdMgr {
       bool readUser(FileFD &pwfile, std::string &name, std::vector<uint8_t> &hash, std::vector<uint8_t> &salt);
       int writeUser(FileFD &pwfile, std::string &name, std::vector<uint8_t> &hash, std::vector<uint8_t> &salt);
 
+      void createNewSalt(std::vector<uint8_t> &salt);
+
       std::string _pwd_file;
 };
 

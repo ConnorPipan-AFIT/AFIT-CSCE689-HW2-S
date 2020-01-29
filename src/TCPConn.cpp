@@ -10,7 +10,10 @@
 // The filename/path of the password file
 const char pwdfilename[] = "passwd";
 
-TCPConn::TCPConn(){ // LogMgr &server_log):_server_log(server_log) {
+TCPConn::TCPConn()
+{ // LogMgr &server_log):_server_log(server_log) {
+
+   PasswordManager = new PasswdMgr(pwdfilename);
 
 }
 
@@ -120,6 +123,25 @@ void TCPConn::handleConnection() {
 
 void TCPConn::getUsername() {
    // Insert your mind-blowing code here
+
+  getUserInput(_username);
+
+  //See if user exists
+  //TODO
+
+  if(PasswordManager->checkUser(_username.c_str())) //find user = true
+  {
+     std::cout << "Found user " << _username << "\n";
+     _status = s_passwd;
+     //_connfd.writeFD("Welcome, user!");
+  }
+  else
+  {
+     std::cout << "Unknown user\n";
+     _connfd.writeFD("username not recognized.\n");
+  }
+  
+   
 }
 
 /**********************************************************************************************
@@ -132,6 +154,32 @@ void TCPConn::getUsername() {
 
 void TCPConn::getPasswd() {
    // Insert your astounding code here
+
+   
+
+
+   _connfd.writeFD("Password: "); 
+
+   std::string password;
+   getUserInput(password);
+
+   //Check password
+   bool passwordIsValid = PasswordManager->checkPasswd(_username.c_str(), password.c_str());
+
+   if(passwordIsValid)
+   {
+      _connfd.writeFD("Password verified. Welcome back!\n");
+      _status = s_confirmpwd;
+   }
+   else
+   {
+      _connfd.writeFD("Username/Password combination not recognized. Please try again.\n");
+      _status = s_username;
+   }
+
+   
+
+
 }
 
 /**********************************************************************************************
@@ -145,6 +193,12 @@ void TCPConn::getPasswd() {
 
 void TCPConn::changePassword() {
    // Insert your amazing code here
+
+   std::string password;
+   getUserInput(password);
+
+   //
+
 }
 
 

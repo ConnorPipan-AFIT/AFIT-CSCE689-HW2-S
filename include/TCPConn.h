@@ -7,6 +7,9 @@ const int max_attempts = 2;
 
 // Methods and attributes to manage a network connection, including tracking the username
 // and a buffer for user input. Status tracks what "phase" of login the user is currently in
+
+#include "PasswdMgr.h"
+
 class TCPConn 
 {
 public:
@@ -52,6 +55,8 @@ private:
    std::string _newpwd; // Used to store user input for changing passwords
 
    int _pwd_attempts = 0;
+
+   PasswdMgr *PasswordManager;
 };
 
 
